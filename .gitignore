@@ -1,0 +1,22 @@
+# Database
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# IDE
+.idea/
+.vscode/
+.kiro/
+
+# Test/lint caches
+.pytest_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+
+# Not for public repo
+references/

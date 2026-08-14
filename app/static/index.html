@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Picture App</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 1.6rem;
+            color: #1a1a2e;
+            margin-bottom: 1.5rem;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        label {
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 500;
+        }
+        select, input[type="number"] {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: #fafafa;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 3px rgba(74,108,247,0.1);
+        }
+        input[type="number"] { width: 60px; }
+        .btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background: #4a6cf7;
+            color: #fff;
+            border-color: #4a6cf7;
+        }
+        .btn-primary:hover { background: #3b5de7; }
+        .btn-secondary {
+            background: #fff;
+            color: #4a6cf7;
+            border-color: #4a6cf7;
+        }
+        .btn-secondary:hover { background: #f0f4ff; }
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .status {
+            margin-bottom: 1rem;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: none;
+        }
+        .status.success { display: block; background: #e8f5e9; color: #2e7d32; }
+        .status.error { display: block; background: #fbe9e7; color: #c62828; }
+        .status.loading { display: block; background: #e3f2fd; color: #1565c0; }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #1565c0;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+        .gallery img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .gallery img:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Animal Picture App</h1>
+
+        <form id="fetch-form" class="controls">
+            <label for="animal">Animal:</label>
+            <select id="animal" name="animal">
+                <option value="cat">Cat</option>
+                <option value="dog">Dog</option>
+                <option value="bear">Bear</option>
+            </select>
+
+            <label for="count">Count (max 5):</label>
+            <input type="number" id="count" name="count" value="1" min="1" max="5">
+
+            <button type="submit" class="btn btn-primary">Fetch &amp; Save</button>
+        </form>
+
+        <div class="actions">
+            <button id="show-latest" class="btn btn-secondary">Show Latest</button>
+            <button id="show-all" class="btn btn-secondary">Show All</button>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div id="gallery" class="gallery"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('fetch-form');
+        const statusEl = document.getElementById('status');
+        const gallery = document.getElementById('gallery');
+        const showLatest = document.getElementById('show-latest');
+        const showAll = document.getElementById('show-all');
+
+        function getAnimal() {
+            return document.getElementById('animal').value;
+        }
+
+        function setStatus(message, type) {
+            statusEl.className = 'status ' + type;
+            if (type === 'loading') {
+                statusEl.innerHTML = '<span class="spinner"></span>' + message;
+            } else {
+                statusEl.textContent = message;
+            }
+        }
+
+        function clearStatus() {
+            statusEl.className = 'status';
+            statusEl.textContent = '';
+        }
+
+        function renderImages(base64List) {
+            gallery.innerHTML = '';
+            if (base64List.length === 0) {
+                gallery.innerHTML = '<p class="empty">No pictures stored yet.</p>';
+                return;
+            }
+            base64List.forEach(b64 => {
+                const img = document.createElement('img');
+                img.src = 'data:image/jpeg;base64,' + b64;
+                img.alt = 'Animal picture';
+                gallery.appendChild(img);
+            });
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const animal = getAnimal();
+            const count = parseInt(document.getElementById('count').value, 10);
+
+            setStatus('Fetching pictures...', 'loading');
+            gallery.innerHTML = '';
+
+            try {
+                const res = await fetch('/fetch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ animal, count })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setStatus(`Saved ${data.saved} picture(s). Click "Show Latest" to view.`, 'success');
+                } else {
+                    setStatus(`Error: ${data.detail}`, 'error');
+                }
+            } catch (err) {
+                setStatus(`Request failed: ${err.message}`, 'error');
+            }
+        });
+
+        showLatest.addEventListener('click', async () => {
+            setStatus('Loading latest...', 'loading');
+            gallery.innerHTML = '';
+
+            try {
+                const res = await fetch(`/latest/${getAnimal()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStatus(`Latest batch: ${data.count} picture(s)`, 'success');
+                    renderImages(data.pictures);
+                } else {
+                    const data = await res.json();
+                    setStatus(data.detail, 'error');
+                }
+            } catch (err) {
+                setStatus(`Request failed: ${err.message}`, 'error');
+            }
+        });
+
+        showAll.addEventListener('click', async () => {
+            setStatus('Loading all pictures...', 'loading');
+            gallery.innerHTML = '';
+
+            try {
+                const res = await fetch(`/pictures/${getAnimal()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStatus(`Showing ${data.count} picture(s)`, 'success');
+                    renderImages(data.pictures);
+                } else {
+                    const data = await res.json();
+                    setStatus(data.detail, 'error');
+                }
+            } catch (err) {
+                setStatus(`Request failed: ${err.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
